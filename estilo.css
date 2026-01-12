@@ -1,0 +1,90 @@
+/* Configuración General */
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #f4f4f9;
+    color: #333;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 20px;
+}
+
+h1 {
+    color: #ef5350; /* Rojo Pokémon */
+    text-transform: uppercase;
+    letter-spacing: 2px;
+}
+
+div {
+    margin-bottom: 20px;
+}
+
+.buscador {
+    padding: 10px;
+    width: 250px;
+    border: 1px solid #ccc;
+    border-radius: 5px 0 0 5px;
+    outline: none;
+}
+
+.btn {
+    padding: 10px 20px;
+    background-color: #ef5350;
+    color: white;
+    border: none;
+    border-radius: 0 5px 5px 0;
+    cursor: pointer;
+    transition: background 0.3s;
+}
+
+.btn:hover {
+    background-color: #d32f2f;
+}
+
+.lista {
+    list-style: none;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+    width: 100%;
+    max-width: 1000px;
+}
+ 
+.carta_pokemon {
+    background: white;
+    border-radius: 15px;
+    padding: 20px;
+    text-align: center;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+    transition: transform 0.2s;
+}
+
+.carta_pokemon:hover {
+    transform: translateY(-5px);
+}
+
+.carta_pokemon img {
+    width: 120px;
+    height: 120px;
+}
+
+.carta_pokemon h3 {
+    margin: 10px 0 5px;
+    text-transform: capitalize;
+}
+
+.carta_pokemon span {
+    color: #888;
+    font-size: 0.9em;
+}
+
+.carta_pokemon p {
+    font-weight: bold;
+    color: #555;
+    background: #eeeeee;
+    padding: 5px;
+    border-radius: 5px;
+    font-size: 0.85em;
+    margin-top: 10px;
+}
