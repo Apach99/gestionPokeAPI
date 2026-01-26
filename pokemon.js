@@ -1,111 +1,146 @@
-//Capturamos los elementos del HTML por  su ID para poder manipularlos
-
+// Elementos y variables globales
 const buscador = document.getElementById("buscador");
-const btnBuscador = document.getElementById("btn-buscador");
 const lista = document.getElementById("lista");
+const btnAnterior = document.getElementById("btn-anterior");
+const btnSiguiente = document.getElementById("btn-siguiente");
+const paginaInfo = document.getElementById("pagina-info");
 
-//Creamos un array vacio donde más tarde almacenaré el resultado de los Pokémon
-let pokemons = [];
+let pokemonsActuales = []; // Guarda los Pokémon del lote de paginación
+let controller;            // Para cancelar peticiones con AbortController
+let offset = 0;            // Punto de inicio para la paginación
+const LIMIT = 20;          // Pokémon por página
 
-//Función que se encarga de la comunicación con la API y el procesamiento de datos
-function mostrarPokemon() {
+//Función modular: Carga una página de Pokémon (Paginación)
+
+async function cargarPagina() {
+    // Cancelamos cualquier petición en curso antes de iniciar una nueva
+    if (controller) controller.abort();
+    controller = new AbortController();
+    const { signal } = controller;
+
     try {
-        //Primera comnunicación con la API para obtener la lista de los primeros 20 Pokémon
-        fetch("https://pokeapi.co/api/v2/pokemon/")
-            .then(response => {
-                //Verificamos que la respuesta del servidor es correcta
-                if (!response.ok) {
-                    throw new Error("Error en la petición");
-                }
-                return response.json(); //Convertimos la respuesta a formato JSON
-            })
-            .then(data => {
-                // La API nos da un array en 'results', pero solo contiene nombres y URLs
-                const listaResultados = data.results;
+        lista.innerHTML = "<p class='mensaje'>Cargando lista...</p>";
+        
+        // Realizamos la petición con el offset actual
+        const resp = await fetch(`https://pokeapi.co/api/v2/pokemon?limit=${LIMIT}&offset=${offset}`, { signal });
+        if (!resp.ok) throw new Error("Error al obtener la lista");
+        const data = await resp.json();
 
-                // Para obtener imágenes y tipos, necesitamos ir a la URL específica de cada Pokémon.
-                // Creamos un array de promesas (peticiones fetch) usando .map()
-                const todasLasURL = listaResultados.map(elemento => {
-                    return fetch(elemento.url)
-                    .then(res => res.json());
-                });
-                // Promise.all espera a que TODAS las peticiones individuales se resuelvan
-                // Esto es mucho más eficiente que pedir los Pokémon uno por uno
-                return Promise.all(todasLasURL);
-            })
-            .then(data2 => {
+        // Obtenemos los detalles individuales (imágenes y tipos) en paralelo
+        const promesas = data.results.map(p => 
+            fetch(p.url, { signal }).then(res => res.json())
+        );
+        const detalles = await Promise.all(promesas);
 
-                // Una vez tenemos los datos detallados (data2), "limpiamos" la información.
-                // Mapeamos los datos gigantes de la API a un objeto sencillo que nosotros controlamos.
-            
-                const infoPokemon = data2;
+        // Mapeamos los datos al formato que necesitamos
+        pokemonsActuales = detalles.map(p => ({
+            nombre: p.name,
+            id: p.id.toString(),
+            img: p.sprites.front_default,
+            tipos: p.types.map(t => t.type.name)
+        }));
 
-                const pokemon = infoPokemon.map(elemento => {
-                    return {
-                        nombre: elemento.name,
-                        id: elemento.id.toString(),//Aquí lo pasamos a string para poder compararlo luego en la función de busqueda
-                        img: elemento.sprites.front_default,
-                        // El tipo es un array, así que mapeamos para obtener solo el nombre del tipo
-                        tipo: elemento.types.map(tipos => {
-                            return tipos.type.name
-                        })
-                    }
-                })
-                // Guardamos los datos limpios en nuestra variable global
-                pokemons = pokemon;
+        renderizar(pokemonsActuales);
+        actualizarPaginacionUI(data.previous, data.next);
 
-                // Llamamos a la función encargada de pintar los Pokémon en el HTML
-                renderizarPokemon(pokemons);
-            });
     } catch (error) {
-        //Aquí capturamos cualquier error que se pueda producir
+        if (error.name === 'AbortError') return; // Ignoramos si fue una cancelación manual
         console.error("Error:", error);
-    };
+        lista.innerHTML = "<p class='error'>Hubo un problema al cargar los datos.</p>";
+    }
 }
 
-//Función encargada de generar el HTML de forma dinámica
-function renderizarPokemon(pokemons) {
-    //Recorremos el array
-    pokemons.forEach(pokemon => {
+//Función modular: Busca un Pokémon específico en TODA la API
+async function buscarEnTodaLaApi(termino) {
+    if (controller) controller.abort();
+    controller = new AbortController();
+    const { signal } = controller;
 
-        //Creamos los elementos HTML
+    try {
+        lista.innerHTML = "<p class='mensaje'>Buscando en la base de datos...</p>";
+        
+        // Consultamos directamente al endpoint del Pokémon específico
+        const resp = await fetch(`https://pokeapi.co/api/v2/pokemon/${termino}`, { signal });
+        
+        if (!resp.ok) {
+            lista.innerHTML = "<p class='mensaje'>No se encontró ningún Pokémon con ese nombre o ID.</p>";
+            btnAnterior.disabled = true;
+            btnSiguiente.disabled = true;
+            return;
+        }
+
+        const p = await resp.json();
+        
+        const pokemonEncontrado = {
+            nombre: p.name,
+            id: p.id.toString(),
+            img: p.sprites.front_default,
+            tipos: p.types.map(t => t.type.name)
+        };
+
+        // Renderizamos solo el resultado. Lo pasamos como array [p] para el forEach
+        renderizar([pokemonEncontrado]);
+        
+        // Bloqueamos la paginación mientras hay un resultado de búsqueda activa
+        btnAnterior.disabled = true;
+        btnSiguiente.disabled = true;
+        paginaInfo.textContent = "Resultado de búsqueda";
+
+    } catch (error) {
+        if (error.name === 'AbortError') return;
+        lista.innerHTML = "<p class='error'>Error al conectar con la base de datos.</p>";
+    }
+}
+
+//Dibuja las tarjetas en el HTML
+function renderizar(array) {
+    lista.innerHTML = "";
+    array.forEach(p => {
         const li = document.createElement("li");
-        const img = document.createElement("img");
-        const h3 = document.createElement("h3");
-        const span = document.createElement("span");
-        const p = document.createElement("p");
-
-        //Asignamos la información a cada elemento HTML
-        img.src = pokemon.img;
-        h3.textContent = pokemon.nombre;
-        span.textContent = pokemon.id;
-        p.textContent = pokemon.tipo;
-
-        //Usamos append para meter toodos los elementos a la vez en el elemento li
-        li.append(h3, img, span, p);
-
-        //Le añadimos la clase carta_pokemon a cada li
         li.classList.add("carta_pokemon");
-
+        li.innerHTML = `
+            <span>#${p.id}</span>
+            <img src="${p.img}" alt="${p.nombre}">
+            <h3>${p.nombre}</h3>
+            <p>${p.tipos.join(" / ")}</p>
+        `;
         lista.appendChild(li);
     });
 }
 
-//Escuchamos el evento click en el botón de búsqueda
-btnBuscador.addEventListener("click", ()=>{
+//Control de botones y texto de página
+function actualizarPaginacionUI(tienePrev, tieneNext) {
+    btnAnterior.disabled = !tienePrev;
+    btnSiguiente.disabled = !tieneNext;
+    paginaInfo.textContent = `Página ${(offset / LIMIT) + 1}`;
+}
 
-    //Obtenemos el valor  del input de búsqueda y lo pasamos a minúsculas
-    const valorBusqueda = buscador.value.toLowerCase();
-    
-    //Filtramos el array pokemons según el criterio del usuario y devolvemos el resultado
-    const resultado = pokemons.filter(pokemon =>{return  pokemon.nombre.includes(valorBusqueda) || valorBusqueda === pokemon.id});
 
-    //Limpiamos el conternido actual de la lista para que no se duplique
-    lista.innerHTML="";
 
-    //Y renderizamos el resulado
-    renderizarPokemon(resultado);
+// Escucha cada pulsación de tecla para búsqueda en tiempo real
+buscador.addEventListener("input", () => {
+    const valor = buscador.value.toLowerCase().trim();
+
+    if (valor === "") {
+        // Si el buscador está vacío, volvemos a la lista paginada
+        cargarPagina();
+    } else {
+        // Si hay texto, buscamos en toda la API
+        buscarEnTodaLaApi(valor);
+    }
 });
 
-//Ejecutamos la función por primera vez al cargar la página
-mostrarPokemon();
+btnSiguiente.addEventListener("click", () => {
+    offset += LIMIT;
+    cargarPagina();
+});
+
+btnAnterior.addEventListener("click", () => {
+    if (offset > 0) {
+        offset -= LIMIT;
+        cargarPagina();
+    }
+});
+
+// Inicio de la App
+cargarPagina();

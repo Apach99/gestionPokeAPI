@@ -88,3 +88,41 @@ div {
     font-size: 0.85em;
     margin-top: 10px;
 }
+
+.mensaje, .error {
+    grid-column: 1 / -1; 
+    text-align: center;
+    padding: 20px;
+    font-weight: bold;
+}
+
+.error { color: #ef5350; }
+
+.paginacion {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 20px;
+    margin-top: 30px;
+    margin-bottom: 50px;
+}
+
+#pagina-info {
+    font-weight: bold;
+    font-size: 1.1em;
+    color: #333;
+}
+
+.btn:disabled {
+    background-color: #ccc;
+    cursor: not-allowed;
+}
+
+.carta_pokemon {
+    animation: aparecer 0.3s ease-in-out;
+}
+
+@keyframes aparecer {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}

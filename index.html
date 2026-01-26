@@ -1,13 +1,15 @@
 <!DOCTYPE html>
 <html>
+
 <head>
     <meta charset='utf-8'>
     <meta http-equiv='X-UA-Compatible' content='IE=edge'>
     <title>Pokémon API</title>
     <meta name='viewport' content='width=device-width, initial-scale=1'>
     <link rel='stylesheet' type='text/css' media='screen' href='estilo.css'>
-   
+
 </head>
+
 <body>
     <h1>Lista de pokemon</h1>
     <div>
@@ -15,9 +17,15 @@
         <button id="btn-buscador" class="btn">BUSCAR</button>
     </div>
     <div>
-    <ul id="lista" class="lista"></ul>
+        <ul id="lista" class="lista"></ul>
+    </div>
+    <div class="paginacion">
+        <button id="btn-anterior" class="btn">Anterior</button>
+        <span id="pagina-info">Página 1</span>
+        <button id="btn-siguiente" class="btn">Siguiente</button>
     </div>
     <script src='pokemon.js'></script>
-    
+
 </body>
+
 </html>

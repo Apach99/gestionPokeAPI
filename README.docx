@@ -43,3 +43,58 @@ Filtrado por ID y Nombre: El buscador no encontraba resultados si se escribía e
 
 Solución: Utilicé el método .toLowerCase() para normalizar la búsqueda y transformé los IDs a texto para que la comparación fuera efectiva. También cambié la comparación estricta por el método .includes() para permitir búsquedas parciales.
 
+//AMPLIACIÓN
+
+¿Qué es AbortController y cómo ayuda a mejorar la aplicación?
+AbortController es una interfaz de la Web API que permite abortar una o más solicitudes web asíncronas (fetch) cuando ya no son necesarias.
+
+En esta aplicación, ayuda a mejorar la eficiencia y la integridad de los datos. Sin ella, si un usuario escribe rápidamente "Pikachu", se dispararían 7 peticiones casi simultáneas. Si la respuesta de la letra "P" tardara más en llegar que la de "Pikachu" debido a la latencia de red,
+el usuario vería resultados incorrectos. AbortController cancela las peticiones obsoletas, asegurando que solo se procese la última acción del usuario y ahorrando recursos de red.
+
+Ejemplo de implementación en el proyecto
+JavaScript
+
+// 1. Definimos una variable global para el controlador
+let controller;
+
+async function buscarPokemon(termino) {
+    // 2. Si existe una petición previa, la abortamos
+    if (controller) controller.abort();
+    
+    // 3. Creamos una nueva instancia y extraemos su señal (signal)
+    controller = new AbortController();
+    const { signal } = controller;
+
+    try {
+        // 4. Pasamos la señal al fetch como parte del objeto de opciones
+        const resp = await fetch(`https://pokeapi.co/api/v2/pokemon/${termino}`, { signal });
+        // ... proceso de datos
+    } catch (error) {
+        // 5. Capturamos el error de cancelación para que no rompa la ejecución
+        if (error.name === 'AbortError') {
+            console.log("Petición cancelada con éxito");
+        }
+    }
+}
+Gestión de errores y mejora de la experiencia del usuario
+La gestión de errores se implementó mediante bloques try/catch de la siguiente manera:
+
+Detección de AbortError: Se diferencia entre un error real de red y una cancelación manual del controlador para evitar mostrar alertas de error innecesarias al usuario mientras escribe.
+
+Manejo de Error 404: Dado que la PokeAPI requiere nombres exactos para búsquedas globales, se implementó un mensaje informativo dinámico ("Pokémon no encontrado") cuando la API no devuelve resultados satisfactorios.
+
+Feedback Visual: Se añadieron estados de "Cargando..." para reducir la incertidumbre del usuario durante las consultas asíncronas.
+
+2. Actualización:
+
+Búsqueda Global en Tiempo Real: Se sustituyó el botón de búsqueda por el evento input. Ahora, la aplicación consulta a toda la base de datos de la API mediante el endpoint directo /pokemon/{nombre}, permitiendo encontrar cualquier Pokémon al instante.
+
+Paginación Dinámica: Se añadieron botones de navegación para explorar la API de 20 en 20, gestionando los parámetros limit y offset de forma asíncrona.
+
+Modularidad de Código: El código se organizó en funciones especializadas (cargarPagina, buscarEnTodaLaApi, renderizar) para cumplir con los estándares de limpieza y mantenimiento.
+
+3. Actualización de Datos Técnicos
+
+Nueva URL Base de búsqueda: https://pokeapi.co/api/v2/pokemon/${valor}
+
+Parámetros de paginación: ?limit=20&offset={variable}
